@@ -16,8 +16,7 @@ let registrationStatus = false;
 const scrollDelay = 100;
 
 window.addEventListener('DOMContentLoaded', async () => {
-    const initalizingOptions = await browser.storage.local.get();
-    loadOptions(initalizingOptions);
+    loadOptions(await readOptions());
     let registrationTimeout = 0;
     while (registrationStatus === false && registrationTimeout < 10000) {
         console.log("registering tst-wheel_and_double");
@@ -119,33 +118,24 @@ async function registerToTST() {
     }
 }
 
-function loadOptions(options) {
-    if (Object.keys(options).length === 0) {
-        createOptions();
+function reloadOptions(changes) {
+    let options = {};
+    for (let [key, val] of Object.entries(changes)) {
+        options[key] = val.newValue;
     }
-    else {
-        disableScrolling = options.disableScrolling;
-        scrollingInverted = options.scrollingInverted;
-        skipCollapsed = options.skipCollapsed;
-        skipDiscarded = options.skipDiscarded;
-        skipCycling = options.skipCycling;
-        enableScrollWindow = options.enableScrollWindow;
-        windowScrollSpeed = options.windowScrollSpeed;
-        doubleClickEnabled = options.doubleClickEnabled;
-        doubleClickSpeed = options.doubleClickSpeed;
-    }
+    loadOptions(options);
 }
 
-function reloadOptions(options) {
-    disableScrolling = options.disableScrolling.newValue;
-    scrollingInverted = options.scrollingInverted.newValue;
-    skipCollapsed = options.skipCollapsed.newValue;
-    skipDiscarded = options.skipDiscarded.newValue;
-    skipCycling = options.skipCycling.newValue;
-    enableScrollWindow = options.enableScrollWindow.newValue;
-    windowScrollSpeed = options.windowScrollSpeed.newValue;
-    doubleClickEnabled = options.doubleClickEnabled.newValue;
-    doubleClickSpeed = options.doubleClickSpeed.newValue;
+function loadOptions(options) {
+    disableScrolling = options.disableScrolling;
+    scrollingInverted = options.scrollingInverted;
+    skipCollapsed = options.skipCollapsed;
+    skipDiscarded = options.skipDiscarded;
+    skipCycling = options.skipCycling;
+    enableScrollWindow = options.enableScrollWindow;
+    windowScrollSpeed = options.windowScrollSpeed;
+    doubleClickEnabled = options.doubleClickEnabled;
+    doubleClickSpeed = options.doubleClickSpeed;
 
     if (disableScrolling) {
         unlockTSTScrolling();
@@ -154,20 +144,23 @@ function reloadOptions(options) {
     }
 }
 
-async function createOptions() {
-    await browser.storage.local.set({
-        disableScrolling: disableScrolling,
-        scrollingInverted: scrollingInverted,
-        skipCollapsed: skipCollapsed,
-        skipDiscarded: skipDiscarded,
-        skipCycling: skipCycling,
-        enableScrollWindow: enableScrollWindow,
-        windowScrollSpeed: windowScrollSpeed,
-        doubleClickEnabled: doubleClickEnabled,
-        doubleClickSpeed: doubleClickSpeed
-    });
-    const reloadingOptions = await browser.storage.local.get();
-    loadOptions(reloadingOptions);
+async function readOptions() {
+    let options = await browser.storage.local.get();
+    if (options.length === 0) {
+        options = {
+            disableScrolling: disableScrolling,
+            scrollingInverted: scrollingInverted,
+            skipCollapsed: skipCollapsed,
+            skipDiscarded: skipDiscarded,
+            skipCycling: skipCycling,
+            enableScrollWindow: enableScrollWindow,
+            windowScrollSpeed: windowScrollSpeed,
+            doubleClickEnabled: doubleClickEnabled,
+            doubleClickSpeed: doubleClickSpeed
+        };
+        await browser.storage.local.set(options);
+    }
+    return options;
 }
 
 async function lockTSTScrolling() {
